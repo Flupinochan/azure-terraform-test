@@ -1,51 +1,39 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/azure/functions-action
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-# More info on Python, GitHub Actions, and Azure Functions: https://aka.ms/python-webapps-actions
-
 name: Build and deploy Python project to Azure Function App - openaiserverlessapp-function
-
 on:
   push:
     branches:
       - master
   workflow_dispatch:
-
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
-  PYTHON_VERSION: '3.9' # set this to the python version to use (supports 3.6, 3.7, 3.8)
-
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './openai-serverless-app/python'
+  PYTHON_VERSION: '3.9'
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Python version
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
       - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
-
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      # Optional: Add step to run tests here
-
+        run: |
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          pip install -r requirements.txt
       - name: Zip artifact for deployment
-        run: zip release.zip ./* -r
-
+        run: | 
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          zip -r ../../release.zip ./*
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -54,31 +42,26 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-function.outputs.webapp-url }}
     permissions:
-      id-token: write #This is required for requesting the JWT
-
+      id-token: write
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
       - name: Unzip artifact for deployment
-        run: unzip release.zip     
-        
+        run: unzip release.zip -d .
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_9F1014BB76984FC28D48788EB4FA43AB }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_08728EDFEC2C44E9AB26F5DEF54A4FAB }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_0F22DBC018DC44309FADFA8CD68A0ED0 }}
-
+          client-id: ${{ secrets.AZURE_CLIENT_ID}}
+          tenant-id: ${{ secrets.AZURE_SUBSCRIPTION_ID}}
+          subscription-id: ${{ secrets.AZURE_TENANT_ID}}
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
         id: deploy-to-function
         with:
           app-name: 'openaiserverlessapp-function'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: .
           scm-do-build-during-deployment: true
           enable-oryx-build: true
-          
