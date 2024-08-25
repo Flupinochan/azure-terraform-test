@@ -41,15 +41,13 @@ jobs:
       - name: Zip artifact for deployment
         run: |
           cd openai-serverless-app/python
-          zip -r ../release.zip ./*
+          zip -r ../../release.zip ./*
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            release.zip
-            !venv/
+          path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -57,6 +55,7 @@ jobs:
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-function.outputs.webapp-url }}
+
     permissions:
       id-token: write #This is required for requesting the JWT
 
@@ -82,7 +81,6 @@ jobs:
         with:
           app-name: 'openaiserverlessapp-function'
           slot-name: 'Production'
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          package: './release.zip'
           scm-do-build-during-deployment: true
           enable-oryx-build: true
-          
