@@ -1,0 +1,42 @@
+openapi: 3.0.0
+info:
+  title: ${var.global-name}-rest-api
+  version: 1.0.0
+paths:
+  /chat:
+    post:
+      summary: Receive messages from the client and process with AI
+      operationId: chatWithAI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: Message from the client to be processed by AI
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: Response message from the AI
+        'default':
+          description: Error response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message
+      x-azure-backend:
+        url: "https://${var.global-name}-function.azurewebsites.net/api/chat"
